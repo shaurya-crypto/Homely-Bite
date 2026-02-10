@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homely Bite - Order Food</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #d32f2f; --bg: #f4f4f4; --success: #28a745; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); overflow-x: hidden; padding-bottom: 80px; }
+        #splash { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .logo-box { width: 90px; height: 90px; background: var(--primary); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 45px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4); }
+
+        /* Reg Screen */
+        #reg-screen { position: fixed; inset: 0; background: white; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .reg-input { width: 85%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .reg-btn { width: 85%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+
+        .header { background: var(--primary); color: white; padding: 15px 10px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: 1.5px; }
+
+        .view { display: none; padding: 12px; }
+        .view.active { display: block; }
+
+        .section-title { font-size: 20px; font-weight: bold; margin: 15px 5px 10px; color: #333; border-left: 4px solid var(--primary); padding-left: 10px; }
+
+        /* Food Card */
+        .food-card { background: white; margin-bottom: 15px; padding: 12px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
+        .food-card img { width: 75px; height: 75px; border-radius: 10px; object-fit: cover; margin-right: 15px; background: #eee; }
+        .food-info { flex: 1; }
+
+        .qty-controls { display: flex; align-items: center; gap: 8px; }
+        .qty-btn { background: white; color: var(--primary); border: 1.5px solid var(--primary); width: 28px; height: 28px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .qty-val { font-weight: bold; min-width: 15px; text-align: center; }
+        .add-btn { background: white; color: var(--primary); border: 1.5px solid var(--primary); padding: 6px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* Profile */
+        .profile-container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 10px; text-align: center; }
+        .profile-pic-container { position: relative; width: 100px; height: 100px; margin: 0 auto 15px; }
+        #p-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); }
+
+        .user-meta { text-align: left; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .user-meta label { font-size: 12px; color: #888; display: block; }
+        .user-meta b { font-size: 16px; color: #333; }
+
+        .order-container { background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; position: relative; }
+
+        /* Navigation */
+        .navbar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-item { text-decoration: none; color: #888; text-align: center; font-size: 10px; flex: 1; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 3px; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+
+        .checkout { position: fixed; bottom: 80px; width: 92%; left: 4%; background: #222; color: white; padding: 14px; border-radius: 12px; display: none; justify-content: space-between; align-items: center; z-index: 900; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div id="splash"><div class="logo-box"><i class="fas fa-utensils"></i></div><h1 style="color:var(--primary); margin:0;">Homely Bite</h1></div>
+
+    <div id="reg-screen">
+        <h2 style="color: var(--primary);">Create Account</h2>
+        <input type="text" id="u-name" class="reg-input" placeholder="Full Name">
+        <input type="tel" id="u-phone" class="reg-input" placeholder="Mobile Number">
+        <input type="text" id="u-addr" class="reg-input" placeholder="Delivery Address">
+        <button class="reg-btn" onclick="saveUser()">Register Now</button>
+    </div>
+
+    <div class="header"><h1>HOMELY BITE</h1><p>Ghar ke hath ka Swad</p></div>
+
+    <div id="home-view" class="view active">
+        <div class="section-title">FOOD MENU</div>
+        <div id="menu-list"></div>
+    </div>
+
+    <div id="orders-view" class="view">
+        <div class="section-title">📦 MY ORDERS</div>
+        <div id="orders-list"></div>
+    </div>
+
+    <div id="me-view" class="view">
+        <div class="section-title">👤 PROFILE</div>
+        <div class="profile-container">
+            <div class="profile-pic-container">
+                <img id="p-img" src="https://via.placeholder.com/100?text=User" alt="Profile">
+                <label onclick="document.getElementById('img-upload').click()" class="pic-edit" style="position:absolute; bottom:0; right:0; background:var(--primary); color:white; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border:2px solid white; cursor:pointer;"><i class="fas fa-camera"></i></label>
+                <input type="file" id="img-upload" hidden accept="image/*" onchange="uploadPic(this)">
+            </div>
+            <div class="user-meta"><label>Name</label><b id="p-name">--</b></div>
+            <div class="user-meta"><label>Phone</label><b id="p-phone">--</b></div>
+            <div class="user-meta"><label>Address</label><b id="p-addr">--</b></div>
+            <button onclick="logout()" style="width:100%; padding:10px; border:1px solid #ddd; background:none; border-radius:8px; color:red; font-weight:bold;">Log Out / Edit</button>
+        </div>
+    </div>
+
+    <div class="checkout" id="cart-bar"><span id="total-val">Total: ₹0</span><button onclick="placeOrder()" style="background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold;">Order Now</button></div>
+
+    <div class="navbar">
+        <a href="javascript:void(0)" onclick="tab('home', this)" class="nav-item active"><i class="fas fa-utensils"></i>Menu</a>
+        <a href="javascript:void(0)" onclick="tab('orders', this)" class="nav-item"><i class="fas fa-truck"></i>Orders</a>
+        <a href="javascript:void(0)" onclick="tab('me', this)" class="nav-item"><i class="fas fa-user"></i>Me</a>
+        <a href="index.html" class="nav-item" style="border-left:1px solid #eee;"><i class="fas fa-id-card"></i>Partner</a>
+    </div>
+
+    <script>
+        const dishes = [
+            {n: "Special Veg Thali", p: 90}, {n: "Aalu Puri (5 Pcs)", p: 50}, {n: "Chole Bhature", p: 80}, {n: "Chicken Biryani", p: 180},
+            {n: "Paneer Butter Masala", p: 170}, {n: "Butter Chicken", p: 230}, {n: "Dal Makhani", p: 130}, {n: "Veg Chowmein", p: 80},
+            {n: "Veg Momos (10pc)", p: 70}, {n: "Butter Naan", p: 40}, {n: "Dal Fry", p: 90}, {n: "Matar Paneer", p: 150},
+            {n: "Egg Curry (2pc)", p: 110}, {n: "Chicken Curry", p: 200}, {n: "Jeera Rice", p: 70}, {n: "Mix Veg", p: 120},
+            {n: "Shahi Paneer", p: 180}, {n: "Tandoori Roti", p: 12}, {n: "Butter Roti", p: 15}, {n: "Masala Dosa", p: 100},
+            {n: "Cold Coffee", p: 60}, {n: "Gulab Jamun (2pc)", p: 40}, {n: "Veg Fried Rice", p: 90}, {n: "Chicken Kadhai", p: 240}, {n: "Honey Chilli Potato", p: 120}
+        ];
+        let cart = {}; let total = 0;
+
+        window.onload = () => {
+            setTimeout(() => { document.getElementById('splash').style.display = 'none'; }, 1500);
+            if(!localStorage.getItem('hUser')) {
+                document.getElementById('reg-screen').style.display = 'flex';
+            } else {
+                updateProfile();
+            }
+            renderMenu();
+            // Auto refresh orders status every 3 seconds
+            setInterval(renderOrders, 3000);
+        };
+
+        function uploadPic(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('p-img').src = e.target.result;
+                    localStorage.setItem('hPic', e.target.result);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function renderMenu() {
+            document.getElementById('menu-list').innerHTML = dishes.map((d) => {
+                const q = cart[d.n] || 0;
+                return `
+                <div class="food-card">
+                    <img src="https://via.placeholder.com/100/d32f2f/ffffff?text=Yum">
+                    <div class="food-info"><div class="food-name"><b>${d.n}</b></div><b>₹${d.p}</b></div>
+                    <div class="qty-col">
+                        ${q > 0 ? `
+                            <div class="qty-controls">
+                                <button class="qty-btn" onclick="updateQty('${d.n}', -1)">-</button>
+                                <span class="qty-val">${q}</span>
+                                <button class="qty-btn" onclick="updateQty('${d.n}', 1)">+</button>
+                            </div>` : `<button class="add-btn" onclick="updateQty('${d.n}', 1)">ADD</button>`}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function updateQty(name, change) {
+            cart[name] = (cart[name] || 0) + change;
+            if (cart[name] <= 0) delete cart[name];
+            total = 0; for (let n in cart) total += dishes.find(d => d.n === n).p * cart[n];
+            document.getElementById('cart-bar').style.display = total > 0 ? 'flex' : 'none';
+            document.getElementById('total-val').innerText = 'Total: ₹' + (total + 20); // +20 delivery
+            renderMenu();
+        }
+
+        function tab(id, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+            document.getElementById(id + '-view').classList.add('active');
+            el.classList.add('active');
+            if(id === 'orders') renderOrders();
+        }
+
+        function saveUser() {
+            const user = { name: document.getElementById('u-name').value, phone: document.getElementById('u-phone').value, addr: document.getElementById('u-addr').value };
+            if(user.name && user.phone && user.addr) {
+                localStorage.setItem('hUser', JSON.stringify(user));
+                location.reload();
+            } else { alert("Please fill all details!"); }
+        }
+
+        function updateProfile() {
+            const u = JSON.parse(localStorage.getItem('hUser'));
+            document.getElementById('p-name').innerText = u.name;
+            document.getElementById('p-phone').innerText = u.phone;
+            document.getElementById('p-addr').innerText = u.addr;
+            const savedPic = localStorage.getItem('hPic');
+            if(savedPic) document.getElementById('p-img').src = savedPic;
+        }
+
+        function logout() { localStorage.removeItem('hUser'); location.reload(); }
+
+        function placeOrder() {
+            const user = JSON.parse(localStorage.getItem('hUser'));
+
+            // Create strings for both Customer (HTML) and Driver (Text)
+            let itemsText = "";
+            let itemsHTML = "";
+            for (let n in cart) {
+                itemsText += `${cart[n]} x ${n}, `;
+                itemsHTML += `• ${cart[n]} x ${n}<br>`;
+            }
+            itemsText = itemsText.slice(0, -2); // Remove trailing comma
+
+            // Unified Order Object - matches what Dashboard expects
+            const newOrder = { 
+                id: Date.now(), 
+                customerName: user.name,
+                phone: user.phone,
+                address: user.addr,
+                items: itemsText, // For Driver
+                itemsHTML: itemsHTML, // For Customer display
+                total: total + 20, 
+                otp: Math.floor(1000 + Math.random() * 9000), 
+                status: 'pending' 
+            };
+
+            // Save to SHARED storage key 'hb_orders'
+            let orders = JSON.parse(localStorage.getItem('hb_orders') || "[]");
+            orders.push(newOrder);
+            localStorage.setItem('hb_orders', JSON.stringify(orders));
+
+            // Reset Cart
+            cart = {}; total = 0; document.getElementById('cart-bar').style.display = 'none';
+            alert("Order Placed Successfully! Waiting for Driver.");
+
+            // Switch to orders tab
+            const orderTab = document.querySelectorAll('.nav-item')[1];
+            tab('orders', orderTab);
+        }
+
+        function renderOrders() {
+            // Read from SHARED storage key
+            const orders = JSON.parse(localStorage.getItem('hb_orders') || "[]");
+
+            // Filter only orders for this user (simple check by phone, or just show all for demo)
+            const user = JSON.parse(localStorage.getItem('hUser'));
+            const myOrders = orders.filter(o => o.phone === user.phone);
+
+            document.getElementById('orders-list').innerHTML = myOrders.reverse().map(o => {
+                const isDelivered = o.status === 'delivered';
+                const statusColor = isDelivered ? '#28a745' : '#ff9800'; 
+                const statusText = isDelivered ? 'DELIVERED' : 'ON WAY';
+
+                return `
+                <div class="order-container" style="border-left: 5px solid ${statusColor};">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="color:${statusColor}; font-size:14px;">${isDelivered ? '✅' : '🚚'} ${statusText}</b>
+                        ${!isDelivered ? `<span style="background:red; color:white; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:12px;">OTP: ${o.otp}</span>` : ''}
+                    </div>
+                    <div style="font-size:13px; margin:10px 0; color:#555;">${o.itemsHTML || o.items}</div>
+                    <div style="font-weight:bold; color:#333; display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #eee; padding-top:5px;">
+                        <span>Total: ₹${o.total}</span>
+                        <span style="color:#aaa; font-size:10px; font-weight:normal;">#${o.id.toString().slice(-4)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
